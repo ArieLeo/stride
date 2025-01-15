@@ -24,18 +24,29 @@ namespace Stride.Rendering.Images
         /// <summary>
         /// Initializes a new instance of the <see cref="Bloom"/> class.
         /// </summary>
-        public Bloom()
-            : base(null, true)
+        public Bloom() : base(null, true)
         {
+            Iteration = 1;
             Radius = 10;
             Amount = 0.3f;
-            DownScale = 2;
+            DownScale = 1;
             SigmaRatio = 3.5f;
             Distortion = new Vector2(1);
             Afterimage = new Afterimage { Enabled = false };
             EnableSetRenderTargets = false;
             stableConvolution = true;
         }
+
+
+        /// <summary>
+        /// Radius of the bloom.
+        /// </summary>
+        /// <userdoc>The range of the bloom effect around bright regions. Note that high values can affect performance</userdoc>
+        [DataMember(10)]
+        [DefaultValue(10)]
+        [DataMemberRange(1, 16, 1, 5, 0)]
+        public int Iteration = 1;
+        const int maxIteration = 16;
 
         /// <summary>
         /// Radius of the bloom.
@@ -104,7 +115,7 @@ namespace Stride.Rendering.Images
                 var old = stableConvolution;
                 stableConvolution = value;
                 if (value != old)
-                {   
+                {
                     multiScaler?.Dispose();
                     multiScaler = null;
                     if (Context != null)
@@ -113,7 +124,7 @@ namespace Stride.Rendering.Images
             }
         }
 
-        [DataMemberIgnore]
+        //[DataMemberIgnore]
         public bool ShowOnlyBloom { get; set; }
 
         [DataMemberIgnore]
@@ -122,9 +133,9 @@ namespace Stride.Rendering.Images
         [DataMemberIgnore]
         public int MipIndex { get; set; }
 
-        [DataMemberIgnore]
+        //[DataMemberIgnore]
         public int DownScale { get; set; }
-
+        Texture[] blurTex = new Texture[maxIteration];
         protected override void InitializeCore()
         {
             base.InitializeCore();
@@ -169,42 +180,75 @@ namespace Stride.Rendering.Images
             // ----------------------------------------
             // Downscale
             // ----------------------------------------
+            /*            var nextSize = input.Size.Down2(DownScale);
+                        var blurTexture = NewScopedRenderTarget2D(nextSize.Width, nextSize.Height, input.Format);
+
+                        if (DownScale > 0)
+                        {
+                            multiScaler.SetInput(input);
+                            multiScaler.SetOutput(blurTexture);
+                            multiScaler.Draw(context);
+
+                            blur.SetInput(blurTexture);
+                        }
+                        else
+                        {
+                            blur.SetInput(input);
+                        }
+
+                        // Max blur size no more than 1/4 of input size
+                        var inputMaxBlurRadiusInPixels = 0.25 * Math.Max(input.Width, input.Height) * Math.Pow(2, -DownScale);
+                        blur.Radius = Math.Max(1, (int)MathUtil.Lerp(1, inputMaxBlurRadiusInPixels, Math.Max(0, Radius / 100.0f)));
+                        blur.SigmaRatio = Math.Max(1.0f, SigmaRatio);
+                        blur.SetOutput(blurTexture);
+                        blur.Draw(context);
+            */
+
             var nextSize = input.Size.Down2(DownScale);
             var blurTexture = NewScopedRenderTarget2D(nextSize.Width, nextSize.Height, input.Format);
-            if (DownScale > 0)
+            var lastInput = input;
+            var lastsize = nextSize;
+            multiScaler.SetInput(input);
+            //multiScaler.SetOutput(blurTexture);
+            //multiScaler.Draw(context);
+
+            for (int i = 0; i < Iteration; i++)
             {
-                multiScaler.SetInput(input);
-                multiScaler.SetOutput(blurTexture);
+                if(i > 0)
+                {
+                    lastsize = lastInput.Size.Down2(i);
+                }
+                blurTex[i] = NewScopedRenderTarget2D(nextSize.Width/2, nextSize.Height/2, input.Format);
+                multiScaler.SetOutput(blurTex[i]);
                 multiScaler.Draw(context);
 
-                blur.SetInput(blurTexture);
+                blur.SetInput(blurTex[i]);
+                // Max blur size no more than 1/4 of input size
+                var inputMaxBlurRadiusInPixels = 0.25 * Math.Max(lastsize.Width * 2.0f, lastsize.Height*2.0f) * Math.Pow(2, -DownScale);
+                blur.Radius = Math.Max(1, (int)MathUtil.Lerp(1, inputMaxBlurRadiusInPixels, Math.Max(0, Radius / 100.0f)));
+                blur.SigmaRatio = Math.Max(1.0f, SigmaRatio);
+                blur.SetOutput(blurTex[i]);
+                blur.Draw(context);
+                lastInput = blurTex[i];
+                blurTexture = lastInput;
+
+                // Copy the input texture to the output
+                if (ShowOnlyMip || ShowOnlyBloom)
+                {
+                    context.CommandList.Clear(output, Color.Black);
+                }
+
+                // Switch to additive
+                Scaler.BlendState = BlendStates.Additive;
+
+                Scaler.Color = new Color4(Amount);
+                Scaler.SetInput(lastInput);
+                Scaler.SetOutput(output);
+                Scaler.Draw(context);
+                Scaler.Reset();
             }
-            else
-            {
-                blur.SetInput(input);
-            }
 
-            // Max blur size no more than 1/4 of input size
-            var inputMaxBlurRadiusInPixels = 0.25 * Math.Max(input.Width, input.Height) * Math.Pow(2, -DownScale);
-            blur.Radius = Math.Max(1, (int)MathUtil.Lerp(1, inputMaxBlurRadiusInPixels, Math.Max(0, Radius / 100.0f)));
-            blur.SigmaRatio = Math.Max(1.0f, SigmaRatio);
-            blur.SetOutput(blurTexture);
-            blur.Draw(context);
 
-            // Copy the input texture to the output
-            if (ShowOnlyMip || ShowOnlyBloom)
-            {
-                context.CommandList.Clear(output, Color.Black);
-            }
-
-            // Switch to additive
-            Scaler.BlendState = BlendStates.Additive;
-
-            Scaler.Color = new Color4(Amount);
-            Scaler.SetInput(blurTexture);
-            Scaler.SetOutput(output);
-            Scaler.Draw(context);
-            Scaler.Reset();
 
             Scaler.BlendState = BlendStates.Default;
         }
