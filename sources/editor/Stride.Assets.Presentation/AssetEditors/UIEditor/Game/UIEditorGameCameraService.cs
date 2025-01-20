@@ -98,7 +98,7 @@ namespace Stride.Assets.Presentation.AssetEditors.UIEditor.Game
 
             // Compute translation speed according to framerate and modifiers
             var translationSpeed = MoveSpeed * SceneUnit * (float)Game.UpdateTime.Elapsed.TotalSeconds;
-            translationSpeed *= Math.Clamp(Component.OrthographicSize / 2.0f, 1.0f, 10.0f);
+            translationSpeed *= Math.Clamp(Component.OrthographicSize/2.0f,1.0f,15.0f); 
             if (Game.Input.IsKeyDown(Keys.LeftShift) || Game.Input.IsKeyDown(Keys.RightShift))
                 translationSpeed *= 10;
 
