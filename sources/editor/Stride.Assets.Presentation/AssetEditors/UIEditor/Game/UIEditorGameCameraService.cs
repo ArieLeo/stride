@@ -36,6 +36,7 @@ namespace Stride.Assets.Presentation.AssetEditors.UIEditor.Game
 
             var horizontalViewDirection = new Vector2(viewDirection.X, viewDirection.Z);
             desiredPitch = MathF.Atan2(viewDirection.Y, horizontalViewDirection.Length());
+
         }
 
         protected override async Task<bool> Initialize(EditorServiceGame editorGame)
@@ -60,6 +61,7 @@ namespace Stride.Assets.Presentation.AssetEditors.UIEditor.Game
             desiredPitch = DefaultPitch;
 
             Component.OrthographicSize = CameraComponent.DefaultOrthographicSize;
+
         }
 
         /// <inheritdoc/>
@@ -98,7 +100,6 @@ namespace Stride.Assets.Presentation.AssetEditors.UIEditor.Game
 
             // Compute translation speed according to framerate and modifiers
             var translationSpeed = MoveSpeed * SceneUnit * (float)Game.UpdateTime.Elapsed.TotalSeconds;
-            translationSpeed *= Math.Clamp(Component.OrthographicSize/2.0f,1.0f,15.0f); 
             if (Game.Input.IsKeyDown(Keys.LeftShift) || Game.Input.IsKeyDown(Keys.RightShift))
                 translationSpeed *= 10;
 
@@ -131,9 +132,9 @@ namespace Stride.Assets.Presentation.AssetEditors.UIEditor.Game
             {
                 desiredYaw = yaw;
                 desiredPitch = pitch;
-
-                position += -right * Game.Input.MouseDelta.X * MouseMoveSpeedFactor * translationSpeed;
-                position += up * Game.Input.MouseDelta.Y * MouseMoveSpeedFactor * translationSpeed;
+                var speedRatio = Component.OrthographicSize*0.5f;
+                position += -right * (Game.Input.MouseDelta.X * speedRatio) * MouseMoveSpeedFactor * translationSpeed;
+                position += up * (Game.Input.MouseDelta.Y * speedRatio) * MouseMoveSpeedFactor * translationSpeed;
             }
             // Dolly (forward and backward)
             else if (IsMouseAvailable && Math.Abs(Game.Input.MouseWheelDelta) > MathUtil.ZeroTolerance)

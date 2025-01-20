@@ -742,6 +742,7 @@ namespace Stride.Assets.Presentation.AssetEditors.UIEditor.ViewModels
         {
             var service = Controller.GetService<IEditorGameCameraViewModelService>();
             service?.SetOrthographicSize(CameraComponent.DefaultOrthographicSize);
+            service?.ResetCamera();
         }
 
         private void SaveSettings()
