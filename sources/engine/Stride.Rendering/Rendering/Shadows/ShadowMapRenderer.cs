@@ -23,8 +23,8 @@ namespace Stride.Rendering.Shadows
         public static readonly ProfilingKey ProfilingKey = new ProfilingKey(nameof(ShadowMapRenderer));
 
         // TODO: Extract a common interface and implem for shadow renderer (not only shadow maps)
-        private readonly int maximumTextureSize = (int)(ReferenceShadowSize * ComputeSizeFactor(LightShadowMapSize.XLarge) * 2.0f);
-        private const float ReferenceShadowSize = 1024;
+        private readonly int maximumTextureSize = (int)(ReferenceShadowSize * ComputeSizeFactor(LightShadowMapSize.XLarge)*2.0);
+        private const float ReferenceShadowSize = 1024*2;
 
         private FastListStruct<ShadowMapAtlasTexture> atlases;
 
