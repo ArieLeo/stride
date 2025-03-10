@@ -10,7 +10,7 @@
 # define SkinningMaxBones 4
 #endif
 
-shader TransformationSkinning : TransformationBase, PositionStream4, Transformation
+shader TransformationSkinning : TransformationBase, PositionStream4, Transformation , NormalStream
 {
     cbuffer PerDraw
     {
@@ -39,5 +39,6 @@ shader TransformationSkinning : TransformationBase, PositionStream4, Transformat
         float4 blendPos = mul(float4(streams.Position.xyz, 1.0f), streams.skinningBlendMatrix);
         blendPos /= blendPos.w;
         streams.PositionWS = blendPos;
+        streams.meshNormal = normalize(mul(streams.meshNormal, (float3x3)streams.skinningBlendMatrix));
     }
 };

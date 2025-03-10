@@ -14,7 +14,7 @@ namespace Stride.Rendering.Materials.ComputeColors
     {
         [DataMember(10)]
         [NotNull]
-        [InlineProperty]
+        //[InlineProperty]
         public IVertexStreamDefinition Stream { get; set; }
 
         public override ShaderSource GenerateShaderSource(ShaderGeneratorContext context, MaterialComputeColorKeys baseKeys)

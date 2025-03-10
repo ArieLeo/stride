@@ -38,6 +38,13 @@ namespace Stride.Rendering.Shadows
 
             float4 shadowPosition = mul(float4(shadowPositionWS, 1.0), WorldToShadowCascadeUV[cascadeIndex + lightIndex * TCascadeCountBase]);
             shadowPosition.z -= DepthBiases[lightIndex];
+            //check if shadowmap pixel pos are too close
+            if(shadowPosition.w < 1e-15){
+                //add epsilon operator
+                //shadowPosition.w += 1e-15;
+                //or exit 
+                return 1.0;
+            }
             shadowPosition.xyz /= shadowPosition.w;
 
             return FilterShadow(shadowPosition.xy, shadowPosition.z);

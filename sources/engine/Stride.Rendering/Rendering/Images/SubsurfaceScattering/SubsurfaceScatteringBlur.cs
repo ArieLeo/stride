@@ -233,10 +233,14 @@ namespace Stride.Rendering.SubsurfaceScattering
 
             // Create a temporary color attachment for texture ping ponging:
             Texture inputFrameBufferColorAttachmentCopy = NewScopedRenderTarget2D(inputFrameBufferColorAttachment.Description); // This texture will be allocated only for the scope of this draw and returned to the pool at the exit of this method.
+            
+            var desc = inputFrameBufferIndexAttachment.Description;
+            desc.MultisampleCount = MultisampleCount.None; // TODO we should have a method to get a non-multisampled RT
+            var inputFrameBufferIndexAttachmentCopy = NewScopedRenderTarget2D(desc);
 
             // Set inputs which are the same for both shaders:
             SetInputForBothShaders(DepthStencilInputIndex, inputFrameBufferDepthAttachment); // Depth attachment -> Texture1
-            SetInputForBothShaders(MaterialIndexInputIndex, inputFrameBufferIndexAttachment); // Index attachment -> Texture2
+            SetInputForBothShaders(MaterialIndexInputIndex, inputFrameBufferIndexAttachmentCopy); // Index attachment -> Texture2
 
             // Set the horizontal shader texture inputs & output:
             blurHShader.SetInput(ColorInputIndex, inputFrameBufferColorAttachment); // Color attachment -> Texture0

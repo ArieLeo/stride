@@ -157,7 +157,7 @@ namespace Stride.Rendering.Shadows
                 shadow /= normalizationFactor;
             }
 
-            return shadow;
+            return saturate(shadow);
         }
         
         /// <summary>

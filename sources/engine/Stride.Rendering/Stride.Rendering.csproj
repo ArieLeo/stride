@@ -23,5 +23,49 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Rendering\Background\BackgroundCubemapShader.sdsl.cs">
+      <DesignTime>True</DesignTime>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Rendering\Materials\Shaders\MaterialSurfaceShadingDiffuseLambert.sdsl.cs">
+      <DesignTime>True</DesignTime>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Rendering\Shadows\ShadowMapFilterPcf.sdsl.cs">
+      <DesignTime>True</DesignTime>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Rendering\Shadows\ShadowMapReceiverBase.sdsl.cs">
+      <DesignTime>True</DesignTime>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Rendering\Skinning\TransformationSkinning.sdsl.cs">
+      <DesignTime>True</DesignTime>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Rendering\Background\BackgroundCubemapShader.sdsl">
+      <LastGenOutput>BackgroundCubemapShader.sdsl.cs</LastGenOutput>
+    </None>
+    <None Update="Rendering\Materials\Shaders\MaterialSurfaceShadingDiffuseLambert.sdsl">
+      <LastGenOutput>MaterialSurfaceShadingDiffuseLambert.sdsl.cs</LastGenOutput>
+    </None>
+    <None Update="Rendering\Shadows\ShadowMapFilterPcf.sdsl">
+      <LastGenOutput>ShadowMapFilterPcf.sdsl.cs</LastGenOutput>
+    </None>
+    <None Update="Rendering\Shadows\ShadowMapReceiverBase.sdsl">
+      <LastGenOutput>ShadowMapReceiverBase.sdsl.cs</LastGenOutput>
+    </None>
+    <None Update="Rendering\Skinning\TransformationSkinning.sdsl">
+      <LastGenOutput>TransformationSkinning.sdsl.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
   <Import Project="$(StrideSdkTargets)" />
 </Project>
