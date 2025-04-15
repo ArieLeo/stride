@@ -81,7 +81,7 @@ namespace Stride.Games
             
             TreatNotFocusedLikeMinimized = true;
             WindowMinimumUpdateRate = new ThreadThrottler(TimeSpan.FromSeconds(0d));
-            MinimizedMinimumUpdateRate = new ThreadThrottler(60); // by default 15 updates per second while minimized
+            MinimizedMinimumUpdateRate = new ThreadThrottler(15); // by default 15 updates per second while minimized
 
             isMouseVisible = true;
 
