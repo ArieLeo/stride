@@ -1,7 +1,6 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Tebjan Halm
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Stride.Core.Annotations;
 using Stride.Core.Mathematics;
 using Stride.Core.Threading;
@@ -15,6 +14,7 @@ namespace Stride.Engine.Processors
     {
         private readonly Dictionary<RenderModel, RenderInstancing> modelInstancingMap = new Dictionary<RenderModel, RenderInstancing>();
         private ModelRenderProcessor modelRenderProcessor;
+
         public class InstancingData
         {
             public TransformComponent TransformComponent;
@@ -123,22 +123,8 @@ namespace Stride.Engine.Processors
 
         private static void BoundingBoxIgnoreWorld(InstancingData instancingData, IInstancing instancing, ModelComponent.MeshInfo meshInfo, Mesh mesh)
         {
-            // Handle InstancingEntityTransform specially (more accurate bounding per instance)
-            if (instancing is InstancingEntityTransform instancingEntity)
-            {
-                var bb = BoundingBox.Empty;
-                for (int i = 0; i < instancing.InstanceCount; i++)
-                {
-                    var matrix = instancingEntity.WorldMatrices[i];
-                    var mbb = MeshBoundsCache.Get(mesh);
-
-                    BoundingBox.Transform(ref mbb, ref matrix, out var transformedBB);
-                    BoundingBox.Merge(ref bb, ref transformedBB, out bb);
-                }
-                meshInfo.BoundingBox = bb;
-            }
             // We need to remove the world transformation component
-            else if (instancingData.ModelComponent.Skeleton != null)
+            if (instancingData.ModelComponent.Skeleton != null)
             {
                 var ibb = instancing.BoundingBox;
                 var mbb = new BoundingBoxExt(meshInfo.BoundingBox);
@@ -232,32 +218,6 @@ namespace Stride.Engine.Processors
         {
             VisibilityGroup.Tags.Remove(InstancingRenderFeature.ModelToInstancingMap);
             base.OnSystemRemove();
-        }
-    }
-
-    /// <summary>
-    /// Caches mesh-space bounding boxes per <see cref="Mesh"/> instance.
-    /// Automatically cleans up when meshes are garbage collected.
-    /// </summary>
-    internal static class MeshBoundsCache
-    {
-        private class BoundingBoxRef
-        {
-            public BoundingBox Value;
-            public BoundingBoxRef(BoundingBox value)
-            {
-                Value = value;
-            }
-        }
-
-        private static readonly ConditionalWeakTable<Mesh, BoundingBoxRef> Cache = new();
-
-        /// <summary>
-        /// Returns a cached copy of the mesh-space bounding box for the given mesh.
-        /// </summary>
-        public static BoundingBox Get(Mesh mesh)
-        {
-            return Cache.GetValue(mesh, m => new BoundingBoxRef(m.BoundingBox)).Value;
         }
     }
 }

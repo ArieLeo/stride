@@ -13,8 +13,8 @@ namespace Stride.Engine
     public class InstancingEntityTransform : InstancingUserArray
     {
         [DataMemberIgnore]
-        public override ModelTransformUsage ModelTransformUsage
-        {
+        public override ModelTransformUsage ModelTransformUsage 
+        { 
             get => ModelTransformUsage.Ignore;
         }
 
