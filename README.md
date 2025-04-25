@@ -1,9 +1,11 @@
 <p>
-    <picture>
+<a href="https://www.stride3d.net/">
+<picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://media.githubusercontent.com/media/stride3d/stride/84092e8aa924e2039b3f8d968907b48fc699c6b3/sources/data/images/Logo/stride-logo-readme-white.png">
       <source media="(prefers-color-scheme: light)" srcset="https://media.githubusercontent.com/media/stride3d/stride/84092e8aa924e2039b3f8d968907b48fc699c6b3/sources/data/images/Logo/stride-logo-readme-black.png">
-      <a href="https://www.stride3d.net/"><img alt="The stride logo, a geometrical 'S' in the form of a cube" src="https://media.githubusercontent.com/media/stride3d/stride/84092e8aa924e2039b3f8d968907b48fc699c6b3/sources/data/images/Logo/stride-logo-readme-black.png"></a>
-    </picture>
+      <img alt="The stride logo, a geometrical 'S' in the form of a cube" src="https://media.githubusercontent.com/media/stride3d/stride/84092e8aa924e2039b3f8d968907b48fc699c6b3/sources/data/images/Logo/stride-logo-readme-black.png">
+</picture>
+</a>
 </p>
 
 [![Join the chat at https://discord.gg/f6aerfE](https://img.shields.io/discord/500285081265635328.svg?style=flat&logo=discord&label=discord&logoColor=f2f2f2)](https://discord.gg/f6aerfE)
@@ -50,7 +52,7 @@ Our [Roadmap](https://doc.stride3d.net/latest/en/contributors/roadmap.html) comm
    - **Desktop development with C++** with:
      - **Windows 11 SDK (10.0.22621.0)** or a later version (should be enabled by default)
      - **MSVC v143 - VS2022 C++ x64/x86 build tools (Latest)** (should be enabled by default)
-     - **MSVC v143 - VS2022 C++ ARM64 build tools (Latest)**
+     - **MSVC v143 - VS2022 C++ ARM64/ARM64EC build tools (Latest)**
      - **C++/CLI support for v143 build tools (Latest)** *(not enabled by default)*
    - *Optional* (to target iOS/Android): **.NET Multi-platform App UI development** and the **Android SDK setup** individual component (enabled by default). Then, in Visual Studio, go to `Tools > Android > Android SDK Manager` and install **NDK** (version 20.1+) from the `Tools` tab.
    - *Optional* (to build the VSIX package): **Visual Studio extension development**
