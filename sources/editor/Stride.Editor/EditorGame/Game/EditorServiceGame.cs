@@ -246,5 +246,9 @@ namespace Stride.Editor.EditorGame.Game
             ExceptionThrown?.Invoke(this, args);
             return args.Handled;
         }
+        public EditorServiceGame()
+        {
+            TreatNotFocusedLikeMinimized = false;
+        }
     }
 }
