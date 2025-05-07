@@ -27,6 +27,7 @@ namespace Stride.Rendering.Shadows
 
         float3 GetShadowPositionOffset(float offsetScale, float nDotL, float3 normal)
         {
+            offsetScale *= 10; 
             float normalOffsetScale = saturate(1.0f - nDotL);
             return 2.0f * ShadowMapTextureTexelSize.x * offsetScale * normalOffsetScale * normal;
         }
@@ -37,7 +38,7 @@ namespace Stride.Rendering.Shadows
             //float3 shadowPositionWSddy = ddy_fine(shadowPositionWS);
 
             float4 shadowPosition = mul(float4(shadowPositionWS, 1.0), WorldToShadowCascadeUV[cascadeIndex + lightIndex * TCascadeCountBase]);
-            shadowPosition.z -= DepthBiases[lightIndex];
+            shadowPosition.z -= DepthBiases[lightIndex]*0.001;
             //check if shadowmap pixel pos are too close
             if(shadowPosition.w < 1e-15){
                 //add epsilon operator
