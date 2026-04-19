@@ -172,6 +172,10 @@ namespace Stride.Rendering.Shadows
 
             private ValueParameterKey<Vector2> shadowMapTextureSizeKey;
             private ValueParameterKey<Vector2> shadowMapTextureTexelSizeKey;
+            private Vector4 pcssParameters;
+            private ValueParameterKey<Vector4> pcssParametersKey;
+            private int pcssFrameIndex;
+            private ValueParameterKey<float> pcssFrameIndexKey;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="LightSpotShadowMapGroupShaderData" /> class.
@@ -197,6 +201,8 @@ namespace Stride.Rendering.Shadows
                 depthRangesKey = ShadowMapReceiverBaseKeys.DepthRanges.ComposeWith(compositionName);
                 depthBiasesKey = ShadowMapReceiverBaseKeys.DepthBiases.ComposeWith(compositionName);
                 offsetScalesKey = ShadowMapReceiverBaseKeys.OffsetScales.ComposeWith(compositionName);
+                pcssParametersKey = ShadowMapKeys.PcssParameters.ComposeWith(compositionName);
+                pcssFrameIndexKey = ShadowMapKeys.PcssFrameIndex.ComposeWith(compositionName);
             }
 
             public override void UpdateLightCount(int lightLastCount, int lightCurrentCount)
@@ -231,6 +237,7 @@ namespace Stride.Rendering.Shadows
                         depthBiases[lightIndex] = singleLightData.DepthBias;
                         offsetScales[lightIndex] = singleLightData.OffsetScale;
                         depthRanges[lightIndex] = singleLightData.DepthRange;
+                        pcssParameters = LightShadowMapFilterTypePcf.GetGpuPcssParameters(lightEntry.ShadowMapTexture.Shadow);
 
                         if (!shadowMapCreated)
                         {
@@ -255,6 +262,8 @@ namespace Stride.Rendering.Shadows
                 parameters.Set(depthRangesKey, depthRanges);
                 parameters.Set(depthBiasesKey, depthBiases);
                 parameters.Set(offsetScalesKey, offsetScales);
+                parameters.Set(pcssParametersKey, pcssParameters);
+                parameters.Set(pcssFrameIndexKey, (float)(pcssFrameIndex++ & 0xFFFF));
             }
         }
 

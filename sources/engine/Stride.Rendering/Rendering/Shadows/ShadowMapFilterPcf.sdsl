@@ -5,12 +5,34 @@ namespace Stride.Rendering.Shadows
     /// <summary>
     /// Performs percentage closer filtering.
     /// </summary>
-    shader ShadowMapFilterPcf<MemberName PerLighting, int TFilterSize> : ShadowMapFilterBase<PerLighting>
+    shader ShadowMapFilterPcf<MemberName PerLighting, int TFilterSize, bool TPcss> : ShadowMapFilterBase<PerLighting>, ShaderBaseStream
     {
+        // PCSS parameters: x = blocker search radius (texels), y = min penumbra (texels),
+        //                  z = max penumbra (texels), w = penumbra scale
+        cbuffer PerLighting
+        {
+            [Link("ShadowMap.PcssParameters")]
+            float4 PcssParameters;
+
+            // Monotonically increasing frame counter used to shift the IGN rotation each frame
+            // via the golden ratio, giving maximal temporal spread for TAA accumulation.
+            [Link("ShadowMap.PcssFrameIndex")]
+            float PcssFrameIndex;
+        }
+
+        // Shared Poisson disk for blocker search and variable PCF (PCSS).
+        static const float2 PcssPoissonDisk16[16] =
+        {
+            float2(-0.94201624, -0.39906216), float2(0.94558609, -0.76890725), float2(-0.09418410, -0.92938870), float2(0.34495938, 0.29387760),
+            float2(-0.91588581, 0.45771432), float2(-0.81544232, -0.87912464), float2(-0.38277543, 0.27676845), float2(0.97484398, 0.75648379),
+            float2(0.44323325, -0.97511554), float2(0.53742981, -0.47373420), float2(-0.26496911, -0.41893023), float2(0.79197514, 0.19090188),
+            float2(-0.24188840, 0.99706507), float2(-0.81409955, 0.91437590), float2(0.19984126, 0.78641367), float2(0.14383161, -0.14100790)
+        };
+
         void CalculatePCFKernelParameters(float2 position, out float2 base_uv, out float2 st)    // TODO: Make "st"!
         {
             float2 uv = position * ShadowMapTextureSize; // 1 unit - 1 texel
-            
+
             base_uv = floor(uv + 0.5);
 
             st = uv + 0.5 - base_uv;
@@ -26,7 +48,7 @@ namespace Stride.Rendering.Shadows
 
             float2 uv0 = (2 - st) / uvW0 - 1;
             float2 uv1 = st / uvW1 + 1;
-            
+
             // Each kernel element contains a texture coordinate (XY) and a weight (Z).
             kernel[0] = float3(base_uv + uv0 * ShadowMapTextureTexelSize, uvW0.x * uvW0.y);
             kernel[1] = float3(base_uv + float2(uv1.x, uv0.y) * ShadowMapTextureTexelSize, uvW1.x * uvW0.y);
@@ -45,7 +67,7 @@ namespace Stride.Rendering.Shadows
             float2 uv0 = (3 - 2 * st) / uvW0 - 2;
             float2 uv1 = (3 + st) / uvW1;
             float2 uv2 = st / uvW2 + 2;
-            
+
             // Each kernel element contains a texture coordinate (XY) and a weight (Z).
             kernel[0] = float3(base_uv + uv0 * ShadowMapTextureTexelSize, uvW0.x * uvW0.y);
             kernel[1] = float3(base_uv + float2(uv1.x, uv0.y) * ShadowMapTextureTexelSize, uvW1.x * uvW0.y);
@@ -59,14 +81,14 @@ namespace Stride.Rendering.Shadows
 
             return 144.0;
         }
-        
+
         float Get7x7FilterKernel(float2 base_uv, float2 st, out float3 kernel[16])
         {
             float2 uvW0 = (5 * st - 6);
             float2 uvW1 = (11 * st - 28);
             float2 uvW2 = -(11 * st + 17);
             float2 uvW3 = -(5 * st + 1);
-            
+
             float2 uv0 = (4 * st - 5) / uvW0 - 3;
             float2 uv1 = (4 * st - 16) / uvW1 - 1;
             float2 uv2 = -(7 * st + 5) / uvW2 + 1;
@@ -98,45 +120,34 @@ namespace Stride.Rendering.Shadows
             return ShadowMapTexture.SampleCmpLevelZero(LinearClampCompareLessEqualSampler, position, positionDepth);
         }
 
-        override float FilterShadow(float2 position, float positionDepth)
+        float FilterShadowFixedKernel(float2 position, float positionDepth)
         {
             float shadow = 0.0f;
 
-            // TODO: handle bias
-          
             float2 base_uv;
             float2 st;
             CalculatePCFKernelParameters(position, base_uv, st);
-
-            // TODO: Apply gradient for initial offset in this way once gradient mapping has been added
-            //          Replacing the above 2 lines this this and using the float2 parameter depthGradient which contains the change in depth along the x and y axis over the size of the entire texture atlas
-            //base_uv -= float2(0.5, 0.5);
-            //float2 initialOffset = base_uv - uv;
-            //base_uv *= ShadowMapTextureTexelSize;
-            //
-            // Take offset to pixel center into account according to the depth gradient
-            //positionDepth += dot(initialOffset * ShadowMapTextureTexelSize, depthGradient);
 
             if (TFilterSize == 3)
             {
                 float3 kernel[4];
                 float normalizationFactor = Get3x3FilterKernel(base_uv, st, kernel);
 
-                [unroll]    // The shader compiler is stupid and refuses to compile without this attribute because "divergent control flow"...
-                for(int i=0; i<4; ++i)
+                [unroll]
+                for (int i = 0; i < 4; ++i)
                 {
                     shadow += kernel[i].z * SampleTextureAndCompare(kernel[i].xy, positionDepth);
                 }
 
                 shadow /= normalizationFactor;
-            } 
+            }
             else if (TFilterSize == 5)
             {
                 float3 kernel[9];
                 float normalizationFactor = Get5x5FilterKernel(base_uv, st, kernel);
-                
-                [unroll]    // The shader compiler is stupid and refuses to compile without this attribute because "divergent control flow"...
-                for(int i=0; i<9; ++i)
+
+                [unroll]
+                for (int i = 0; i < 9; ++i)
                 {
                     shadow += kernel[i].z * SampleTextureAndCompare(kernel[i].xy, positionDepth);
                 }
@@ -147,9 +158,9 @@ namespace Stride.Rendering.Shadows
             {
                 float3 kernel[16];
                 float normalizationFactor = Get7x7FilterKernel(base_uv, st, kernel);
-                
-                [unroll]    // The shader compiler is stupid and refuses to compile without this attribute because "divergent control flow"...
-                for(int i=0; i<16; ++i)
+
+                [unroll]
+                for (int i = 0; i < 16; ++i)
                 {
                     shadow += kernel[i].z * SampleTextureAndCompare(kernel[i].xy, positionDepth);
                 }
@@ -157,13 +168,89 @@ namespace Stride.Rendering.Shadows
                 shadow /= normalizationFactor;
             }
 
-            return shadow;
+            return saturate(shadow);
         }
-        
+
+        // Interleaved Gradient Noise (Jimenez 2014) — fast, no texture, great spatial distribution.
+        float PcssInterleavedGradientNoise(float2 screenPos)
+        {
+            return frac(52.9829189f * frac(dot(screenPos, float2(0.06711056f, 0.00583715f))));
+        }
+
+        float FilterShadowPcss(float2 position, float positionDepth)
+        {
+            float2 texelScale = ShadowMapTextureTexelSize;
+            float searchRadius = max(PcssParameters.x, 0.5);
+
+            // Spatial IGN gives per-pixel variety; golden-ratio frame offset gives maximal
+            // temporal spread across frames — each frame lands in a different angular "slot"
+            // that TAA can accumulate into a smooth result with 8–16 frames of history.
+            float noise = PcssInterleavedGradientNoise(streams.ShadingPosition.xy);
+            float angle = frac(noise + PcssFrameIndex * 0.61803398875f) * 6.28318530718f;
+            float cosA, sinA;
+            sincos(angle, sinA, cosA);
+
+            float blockerSum = 0.0;
+            int blockerCount = 0;
+
+            [unroll]
+            for (int i = 0; i < 16; i++)
+            {
+                float2 s = PcssPoissonDisk16[i];
+                float2 rotated = float2(cosA * s.x - sinA * s.y, sinA * s.x + cosA * s.y);
+                float2 suv = position + rotated * texelScale * searchRadius;
+                float d = ShadowMapTexture.SampleLevel(LinearBorderSampler, suv, 0).r;
+                if (d < positionDepth - 0.00001)
+                {
+                    blockerSum += d;
+                    blockerCount++;
+                }
+            }
+
+            // No blockers at all — pixel is fully lit, skip the gather entirely.
+            if (blockerCount == 0)
+                return 1.0;
+
+            float avgBlockerDepth = blockerSum / float(blockerCount);
+            float penumbraTexels = ((positionDepth - avgBlockerDepth) / max(avgBlockerDepth, 0.00001)) * PcssParameters.w;
+            penumbraTexels = clamp(penumbraTexels, PcssParameters.y, PcssParameters.z);
+
+            float shadowAcc = 0.0;
+            [unroll]
+            for (int j = 0; j < 16; j++)
+            {
+                float2 s = PcssPoissonDisk16[j];
+                float2 rotated = float2(cosA * s.x - sinA * s.y, sinA * s.x + cosA * s.y);
+                float2 pcfUv = position + rotated * texelScale * penumbraTexels;
+                shadowAcc += SampleTextureAndCompare(pcfUv, positionDepth);
+            }
+
+            float shadow = saturate(shadowAcc / 16.0);
+
+            // At the outer penumbra edge, blockerCount drops in discrete steps (16→1→0).
+            // That last jump from 1→0 creates a hard visible ring.  Blend the shadow result
+            // toward fully-lit proportionally to the blocker coverage fraction so the edge
+            // dissolves smoothly instead of cutting off.
+            // smoothstep(0, 0.25) → cubic ease over the first 4-of-16 blocker samples;
+            // at ≥4 blockers the blend weight is 1.0 and the full shadow is shown unchanged.
+            float blockerCoverage = float(blockerCount) * (1.0f / 16.0f);
+            return lerp(1.0, shadow, smoothstep(0.0, 0.25, blockerCoverage));
+        }
+
+        override float FilterShadow(float2 position, float positionDepth)
+        {
+            if (TPcss)
+            {
+                return FilterShadowPcss(position, positionDepth);
+            }
+
+            return FilterShadowFixedKernel(position, positionDepth);
+        }
+
         /// <summary>
         /// Returns the filter radius in texture space.
         /// </summary>
-        float GetFilterRadiusInPixels(void)   
+        float GetFilterRadiusInPixels(void)
         {
             // TODO: Some of these filters are so wide, that they cause artifacts on thin objects like ears for example.
 
@@ -186,11 +273,11 @@ namespace Stride.Rendering.Shadows
         float SampleAndFilter(float3 adjustedPixelPositionWS, float3 adjustedPixelPositionShadowSpace, float2 depthRanges, float4x4 inverseWorldToShadowCascadeUV, bool isOrthographic, bool isDualParaboloid = false)
         {
             float2 uv = adjustedPixelPositionShadowSpace.xy * ShadowMapTextureSize; // 1 unit - 1 texel
-            
+
             float2 base_uv = floor(uv + 0.5);
             float2 st = uv + 0.5 - base_uv;
             base_uv *= ShadowMapTextureTexelSize;
-            
+
             float thickness = 0.0;
             float normalizationFactor = 1.0;
 
@@ -198,21 +285,21 @@ namespace Stride.Rendering.Shadows
             {
                 float3 kernel[4];
                 normalizationFactor = Get3x3FilterKernel(base_uv, st, kernel);
-                
+
                 [unroll]    // The shader compiler is stupid and refuses to compile without this attribute because "divergent control flow"...
-                for(int i=0; i<4; ++i)
+                for (int i = 0; i < 4; ++i)
                 {
                     thickness += kernel[i].z * SampleThickness(float3(kernel[i].xy, adjustedPixelPositionShadowSpace.z), adjustedPixelPositionWS,
                                                                depthRanges, inverseWorldToShadowCascadeUV, isOrthographic);
                 }
-            } 
+            }
             else if (TFilterSize == 5)
             {
                 float3 kernel[9];
                 normalizationFactor = Get5x5FilterKernel(base_uv, st, kernel);
-                
+
                 [unroll]    // The shader compiler is stupid and refuses to compile without this attribute because "divergent control flow"...
-                for(int i=0; i<9; ++i)
+                for (int i = 0; i < 9; ++i)
                 {
                     thickness += kernel[i].z * SampleThickness(float3(kernel[i].xy, adjustedPixelPositionShadowSpace.z), adjustedPixelPositionWS,
                                                                depthRanges, inverseWorldToShadowCascadeUV, isOrthographic);
@@ -222,9 +309,9 @@ namespace Stride.Rendering.Shadows
             {
                 float3 kernel[16];
                 normalizationFactor = Get7x7FilterKernel(base_uv, st, kernel);
-                
+
                 [unroll]    // The shader compiler is stupid and refuses to compile without this attribute because "divergent control flow"...
-                for(int i=0; i<16; ++i)
+                for (int i = 0; i < 16; ++i)
                 {
                     thickness += kernel[i].z * SampleThickness(float3(kernel[i].xy, adjustedPixelPositionShadowSpace.z), adjustedPixelPositionWS,
                                                                depthRanges, inverseWorldToShadowCascadeUV, isOrthographic);
@@ -246,7 +333,7 @@ namespace Stride.Rendering.Shadows
             float3 adjustedPixelPositionWS;
             float3 adjustedPixelPositionShadowSpace;
 
-            if(isOrthographic)  // TODO: The offset calculation only works for directional lights for now.
+            if (isOrthographic)  // TODO: The offset calculation only works for directional lights for now.
             {
                 // Calculate the adjusted world space coordinate and shadow map coordinate of the current pixel:
 
@@ -254,7 +341,7 @@ namespace Stride.Rendering.Shadows
                 // TODO: PERFORMANCE: Ideally we'd like to move this to "ShadowMapReceiverDirectional.sdsl",
                 //                    because that way we can ensure that the adjusted pixel positions are calculated only once per pixel per light.
                 //                    Sadly this is not that easy because the offset depends on the filter width, which is only available inside of "ShadowMapFilterPcf.sdsl".
-                
+
                 CalculateAdjustedShadowSpacePixelPosition(GetFilterRadiusInPixels(), pixelPositionWS, meshNormalWS,
                                                           worldToShadowCascadeUV, inverseWorldToShadowCascadeUV,
                                                           adjustedPixelPositionWS, adjustedPixelPositionShadowSpace);
@@ -271,7 +358,7 @@ namespace Stride.Rendering.Shadows
                 adjustedPixelPositionShadowSpace = shadowMapCoordinate.xyz;
                 adjustedPixelPositionWS = pixelPositionWS;
                 */
-                
+
                 CalculateAdjustedShadowSpacePixelPositionPerspective(GetFilterRadiusInPixels(), pixelPositionWS, meshNormalWS,
                                                                      worldToShadowCascadeUV, inverseWorldToShadowCascadeUV,
                                                                      adjustedPixelPositionWS, adjustedPixelPositionShadowSpace);

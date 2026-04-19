@@ -199,6 +199,7 @@ namespace Stride.Rendering.Shadows
             private float[] depthBiases;
             private float[] offsetScales;
             private Vector2[] depthParameters;
+            private Vector4 pcssParameters;
 
             private ValueParameterKey<float> depthBiasesKey;
             private ValueParameterKey<float> offsetScalesKey;
@@ -209,6 +210,10 @@ namespace Stride.Rendering.Shadows
             private ObjectParameterKey<Texture> shadowMapTextureKey;
             private ValueParameterKey<Vector2> shadowMapTextureSizeKey;
             private ValueParameterKey<Vector2> shadowMapTextureTexelSizeKey;
+            private ValueParameterKey<Vector4> pcssParametersKey;
+            private int pcssFrameIndex;
+            private ValueParameterKey<float> pcssFrameIndexKey;
+
 
             public ShaderGroupData(LightShadowType shadowType) : base(shadowType)
             {
@@ -224,6 +229,8 @@ namespace Stride.Rendering.Shadows
                 depthBiasesKey = ShadowMapReceiverPointCubeMapKeys.DepthBiases.ComposeWith(compositionName);
                 depthParametersKey = ShadowMapReceiverPointCubeMapKeys.DepthParameters.ComposeWith(compositionName);
                 offsetScalesKey = ShadowMapReceiverPointCubeMapKeys.OffsetScales.ComposeWith(compositionName);
+                pcssParametersKey = ShadowMapKeys.PcssParameters.ComposeWith(compositionName);
+                pcssFrameIndexKey = ShadowMapKeys.PcssFrameIndex.ComposeWith(compositionName);
             }
 
             public override void UpdateLightCount(int lightLastCount, int lightCurrentCount)
@@ -266,6 +273,7 @@ namespace Stride.Rendering.Shadows
                         depthBiases[lightIndex] = shaderData.DepthBias;
                         offsetScales[lightIndex] = shaderData.OffsetScale;
                         depthParameters[lightIndex] = shaderData.DepthParameters;
+                        pcssParameters = LightShadowMapFilterTypePcf.GetGpuPcssParameters(lightEntry.ShadowMapTexture.Shadow);
                         lightIndex++;
 
                         // TODO: should be setup just once at creation time
@@ -291,6 +299,8 @@ namespace Stride.Rendering.Shadows
                 parameters.Set(depthParametersKey, depthParameters);
                 parameters.Set(depthBiasesKey, depthBiases);
                 parameters.Set(offsetScalesKey, offsetScales);
+                parameters.Set(pcssParametersKey, pcssParameters);
+                parameters.Set(pcssFrameIndexKey, (float)(pcssFrameIndex++ & 0xFFFF));
             }
         }
     }

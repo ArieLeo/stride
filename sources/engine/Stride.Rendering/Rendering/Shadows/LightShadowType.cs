@@ -22,6 +22,11 @@ namespace Stride.Rendering.Shadows
 
         ComputeTransmittance = 0x20,
 
+        /// <summary>
+        /// Percentage-closer soft shadows (PCSS) when combined with a PCF filter type.
+        /// </summary>
+        PCSS = 0x40,
+
         FilterMask = 0xF00,
 
         PCF3x3 = 0x100,
