@@ -249,6 +249,8 @@ namespace Stride.Rendering
                 foreach (var renderMesh in renderMeshes)
                 {
                     VisibilityGroup.RenderObjects.Add(renderMesh);
+                    // Propagate mobility from ModelComponent so static geometry skips per-frame bounds sync.
+                    VisibilityGroup.SetObjectMobility(renderMesh, modelComponent.Mobility);
                 }
             }
         }

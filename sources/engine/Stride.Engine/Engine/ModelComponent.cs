@@ -150,6 +150,16 @@ namespace Stride.Engine
         public RenderGroup RenderGroup { get; set; }
 
         /// <summary>
+        /// Controls how often the object's bounding box is refreshed for visibility culling.
+        /// Use <see cref="ObjectMobility.Static"/> for world geometry that never moves after
+        /// scene load to skip per-frame bounds updates and reduce CPU cost.
+        /// </summary>
+        [DataMember(25)]
+        [DefaultValue(ObjectMobility.Dynamic)]
+        [Display("Mobility")]
+        public ObjectMobility Mobility { get; set; } = ObjectMobility.Dynamic;
+
+        /// <summary>
         /// Gets the bounding box in world space.
         /// </summary>
         /// <value>The bounding box.</value>
