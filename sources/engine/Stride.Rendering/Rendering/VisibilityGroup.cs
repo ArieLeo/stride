@@ -384,10 +384,17 @@ namespace Stride.Rendering
                     int roOffset   = vo.RenderObjectsOffset;
                     int roCount    = Group.RenderObjects.Count;
 
-                    // For the 1:1 default, sync the single child's bounds.
-                    // For N:1 dynamic groups, the creator is responsible for keeping vo.BoundingBox current.
+                    // For the 1:1 default, sync bounds, Enabled, and RenderGroup from the child.
+                    // This keeps the VO-level early-outs (Enabled, CullingMask) correct for dynamic
+                    // objects whose state changes at runtime (e.g. editor physics gizmo toggle).
+                    // For N:1 dynamic groups the creator is responsible for keeping vo fields current.
                     if (vo.RenderObjectsCount == 1 && (uint)roOffset < (uint)roCount)
-                        vo.BoundingBox = Group.RenderObjects[roOffset].BoundingBox;
+                    {
+                        var child   = Group.RenderObjects[roOffset];
+                        vo.BoundingBox  = child.BoundingBox;
+                        vo.Enabled      = child.Enabled;
+                        vo.RenderGroup  = child.RenderGroup;
+                    }
                 }
             }
         }
@@ -428,6 +435,10 @@ namespace Stride.Rendering
                 }
 
                 if (!stageMatch) continue;
+
+                // Re-read Enabled here: the VO's flag is a snapshot from registration
+                // and may be stale (e.g. editor toggling a physics gizmo off mid-frame).
+                if (!renderObject.Enabled) continue;
 
                 view.RenderObjects.Add(renderObject, cache);
 
