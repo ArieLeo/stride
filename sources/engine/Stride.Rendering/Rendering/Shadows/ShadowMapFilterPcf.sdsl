@@ -14,6 +14,9 @@ namespace Stride.Rendering.Shadows
             [Link("ShadowMap.PcssParameters")]
             float4 PcssParameters;
 
+            [Link("ShadowMap.PcssParameters2")]
+            float4 PcssParameters2;
+
             // Monotonically increasing frame counter used to shift the IGN rotation each frame
             // via the golden ratio, giving maximal temporal spread for TAA accumulation.
             [Link("ShadowMap.PcssFrameIndex")]
@@ -177,63 +180,100 @@ namespace Stride.Rendering.Shadows
             return frac(52.9829189f * frac(dot(screenPos, float2(0.06711056f, 0.00583715f))));
         }
 
-        float FilterShadowPcss(float2 position, float positionDepth)
-        {
+        float FilterShadowPcss(float2 position, float positionDepth) {
             float2 texelScale = ShadowMapTextureTexelSize;
             float searchRadius = max(PcssParameters.x, 0.5);
 
-            // Spatial IGN gives per-pixel variety; golden-ratio frame offset gives maximal
-            // temporal spread across frames — each frame lands in a different angular "slot"
-            // that TAA can accumulate into a smooth result with 8–16 frames of history.
+            // NEW: controls how samples are distributed inside the kernel radius.
+            // MUST be exposed as a new parameter (e.g. uniform float PcssSpread).
+            // 1.0 = default, <1 = softer/wider penumbra, >1 = tighter/sharper shadow core
+            float PcssSpread = PcssParameters2.x;
+
             float noise = PcssInterleavedGradientNoise(streams.ShadingPosition.xy);
-            float angle = frac(noise + PcssFrameIndex * 0.61803398875f) * 6.28318530718f;
+            float angle = frac(noise + PcssFrameIndex * 1.61803398875f) * 6.28318530718f;
+
             float cosA, sinA;
             sincos(angle, sinA, cosA);
 
             float blockerSum = 0.0;
             int blockerCount = 0;
 
+            // --- Blocker search ---
             [unroll]
-            for (int i = 0; i < 16; i++)
-            {
+            for (int i = 0; i < 16; i++) {
                 float2 s = PcssPoissonDisk16[i];
-                float2 rotated = float2(cosA * s.x - sinA * s.y, sinA * s.x + cosA * s.y);
+
+                float r = length(s);
+                float2 dir = s / max(r, 1e-5);
+
+                // stronger shaping
+                float warpedR = lerp(r, r * r, saturate(PcssSpread - 1.0));
+
+                // optional push outward for soft shadows
+                warpedR = pow(warpedR, PcssSpread);
+                float weight = pow(r, PcssSpread);
+                float2 warped = dir * warpedR;
+                warped = s * weight;
+
+                float2 rotated = float2(
+                    cosA * warped.x - sinA * warped.y,
+                    sinA * warped.x + cosA * warped.y
+                );
+
                 float2 suv = position + rotated * texelScale * searchRadius;
                 float d = ShadowMapTexture.SampleLevel(LinearBorderSampler, suv, 0).r;
-                if (d < positionDepth - 0.00001)
-                {
+
+                if (d < positionDepth - 0.00001) {
                     blockerSum += d;
                     blockerCount++;
                 }
             }
 
-            // No blockers at all — pixel is fully lit, skip the gather entirely.
+            // No blockers → fully lit
             if (blockerCount == 0)
                 return 1.0;
 
             float avgBlockerDepth = blockerSum / float(blockerCount);
-            float penumbraTexels = ((positionDepth - avgBlockerDepth) / max(avgBlockerDepth, 0.00001)) * PcssParameters.w;
+
+            float penumbraTexels =
+                ((positionDepth - avgBlockerDepth) / max(avgBlockerDepth, 0.00001)) *
+                PcssParameters.w;
+
             penumbraTexels = clamp(penumbraTexels, PcssParameters.y, PcssParameters.z);
 
             float shadowAcc = 0.0;
+
+            // --- PCF filtering ---
             [unroll]
-            for (int j = 0; j < 16; j++)
-            {
+            for (int j = 0; j < 16; j++) {
                 float2 s = PcssPoissonDisk16[j];
-                float2 rotated = float2(cosA * s.x - sinA * s.y, sinA * s.x + cosA * s.y);
+
+                float r = length(s);
+                float2 dir = s / max(r, 1e-5);
+
+                // stronger shaping
+                float warpedR = lerp(r, r * r, saturate(PcssSpread - 1.0));
+
+                // optional push outward for soft shadows
+                warpedR = pow(warpedR, PcssSpread);
+                float weight = pow(r, PcssSpread);
+                float2 warped = dir * warpedR;
+                warped = s * weight;
+
+                float2 rotated = float2(
+                    cosA * warped.x - sinA * warped.y,
+                    sinA * warped.x + cosA * warped.y
+                );
+
                 float2 pcfUv = position + rotated * texelScale * penumbraTexels;
+
                 shadowAcc += SampleTextureAndCompare(pcfUv, positionDepth);
             }
 
             float shadow = saturate(shadowAcc / 16.0);
 
-            // At the outer penumbra edge, blockerCount drops in discrete steps (16→1→0).
-            // That last jump from 1→0 creates a hard visible ring.  Blend the shadow result
-            // toward fully-lit proportionally to the blocker coverage fraction so the edge
-            // dissolves smoothly instead of cutting off.
-            // smoothstep(0, 0.25) → cubic ease over the first 4-of-16 blocker samples;
-            // at ≥4 blockers the blend weight is 1.0 and the full shadow is shown unchanged.
-            float blockerCoverage = float(blockerCount) * (1.0f / 16.0f);
+            // Smooth edge fade based on blocker coverage
+            float blockerCoverage = float(blockerCount) * (1.0 / 16.0);
             return lerp(1.0, shadow, smoothstep(0.0, 0.25, blockerCoverage));
         }
 

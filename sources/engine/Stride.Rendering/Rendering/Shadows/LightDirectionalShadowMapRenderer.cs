@@ -497,7 +497,9 @@ namespace Stride.Rendering.Shadows
             private ValueParameterKey<Vector2> shadowMapTextureSizeKey;
             private ValueParameterKey<Vector2> shadowMapTextureTexelSizeKey;
             private Vector4 pcssParameters;
+            private Vector4 pcssParameters2;
             private ValueParameterKey<Vector4> pcssParametersKey;
+            private ValueParameterKey<Vector4> pcssParametersKey2;
             private int pcssFrameIndex;
             private ValueParameterKey<float> pcssFrameIndexKey;
 
@@ -531,6 +533,7 @@ namespace Stride.Rendering.Shadows
                 depthBiasesKey = ShadowMapReceiverBaseKeys.DepthBiases.ComposeWith(compositionKey);
                 offsetScalesKey = ShadowMapReceiverBaseKeys.OffsetScales.ComposeWith(compositionKey);
                 pcssParametersKey = ShadowMapKeys.PcssParameters.ComposeWith(compositionKey);
+                pcssParametersKey2 = ShadowMapKeys.PcssParameters2.ComposeWith(compositionKey);
                 pcssFrameIndexKey = ShadowMapKeys.PcssFrameIndex.ComposeWith(compositionKey);
             }
 
@@ -572,6 +575,7 @@ namespace Stride.Rendering.Shadows
                     offsetScales[lightIndex] = singleLightData.OffsetScale;
                     if (lightIndex == 0)
                         pcssParameters = LightShadowMapFilterTypePcf.GetGpuPcssParameters(lightEntry.ShadowMapTexture.Shadow);
+                        pcssParameters2 = LightShadowMapFilterTypePcf.GetGpuPcssParameters2(lightEntry.ShadowMapTexture.Shadow);
 
                     // TODO: should be setup just once at creation time
                     if (lightIndex == 0)
@@ -595,6 +599,7 @@ namespace Stride.Rendering.Shadows
                 parameters.Set(depthBiasesKey, depthBiases);
                 parameters.Set(offsetScalesKey, offsetScales);
                 parameters.Set(pcssParametersKey, pcssParameters);
+                parameters.Set(pcssParametersKey2, pcssParameters2);
                 parameters.Set(pcssFrameIndexKey, (float)(pcssFrameIndex++ & 0xFFFF));
             }
         }

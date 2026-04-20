@@ -174,6 +174,8 @@ namespace Stride.Rendering.Shadows
             private ValueParameterKey<Vector2> shadowMapTextureTexelSizeKey;
             private Vector4 pcssParameters;
             private ValueParameterKey<Vector4> pcssParametersKey;
+            private Vector4 pcssParameters2;
+            private ValueParameterKey<Vector4> pcssParametersKey2;
             private int pcssFrameIndex;
             private ValueParameterKey<float> pcssFrameIndexKey;
 
@@ -202,6 +204,7 @@ namespace Stride.Rendering.Shadows
                 depthBiasesKey = ShadowMapReceiverBaseKeys.DepthBiases.ComposeWith(compositionName);
                 offsetScalesKey = ShadowMapReceiverBaseKeys.OffsetScales.ComposeWith(compositionName);
                 pcssParametersKey = ShadowMapKeys.PcssParameters.ComposeWith(compositionName);
+                pcssParametersKey2 = ShadowMapKeys.PcssParameters2.ComposeWith(compositionName);
                 pcssFrameIndexKey = ShadowMapKeys.PcssFrameIndex.ComposeWith(compositionName);
             }
 
@@ -238,6 +241,7 @@ namespace Stride.Rendering.Shadows
                         offsetScales[lightIndex] = singleLightData.OffsetScale;
                         depthRanges[lightIndex] = singleLightData.DepthRange;
                         pcssParameters = LightShadowMapFilterTypePcf.GetGpuPcssParameters(lightEntry.ShadowMapTexture.Shadow);
+                        pcssParameters2 = LightShadowMapFilterTypePcf.GetGpuPcssParameters2(lightEntry.ShadowMapTexture.Shadow);
 
                         if (!shadowMapCreated)
                         {
@@ -263,6 +267,7 @@ namespace Stride.Rendering.Shadows
                 parameters.Set(depthBiasesKey, depthBiases);
                 parameters.Set(offsetScalesKey, offsetScales);
                 parameters.Set(pcssParametersKey, pcssParameters);
+                parameters.Set(pcssParametersKey2, pcssParameters2);
                 parameters.Set(pcssFrameIndexKey, (float)(pcssFrameIndex++ & 0xFFFF));
             }
         }

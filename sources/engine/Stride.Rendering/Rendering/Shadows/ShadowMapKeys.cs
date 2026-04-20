@@ -31,6 +31,11 @@ namespace Stride.Rendering.Shadows
         /// z = max penumbra (texels), w = penumbra scale. Only used when PCSS is enabled.
         /// </summary>
         public static readonly ValueParameterKey<Vector4> PcssParameters = ParameterKeys.NewValue<Vector4>();
+        /// <summary>
+        /// PCSS parameters for the PCF filter: x = radius spread, y = empty,
+        /// z = empty, w = empty. Only used when PCSS is enabled.
+        /// </summary>
+        public static readonly ValueParameterKey<Vector4> PcssParameters2 = ParameterKeys.NewValue<Vector4>();
 
         /// <summary>
         /// Monotonically increasing frame counter uploaded to the PCSS shader so the interleaved

@@ -2,7 +2,6 @@
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
 using System.ComponentModel;
-
 using Stride.Core;
 using Stride.Core.Mathematics;
 
@@ -31,6 +30,7 @@ namespace Stride.Rendering.Lights
             PcssMinPenumbraTexels = 1.5f;
             PcssMaxPenumbraTexels = 5.0f;
             PcssPenumbraScale = 5.0f;
+            PcssRadiusSpread = 1.0f;
         }
 
         /// <summary>
@@ -77,8 +77,12 @@ namespace Stride.Rendering.Lights
         /// </summary>
         /// <userdoc>Higher values produce wider, softer penumbra.</userdoc>
         [DataMember(60)]
-        [DefaultValue(2.0f)]
+        [DefaultValue(5.0f)]
         public float PcssPenumbraScale { get; set; }
+
+        [DataMember(70)]
+        [DefaultValue(1.0f)]
+        public float PcssRadiusSpread { get; set; }
 
         /// <summary>
         /// Packs PCSS parameters for the shadow shader (x: blocker search radius, y: min penumbra texels, z: max penumbra texels, w: scale).
@@ -94,6 +98,22 @@ namespace Stride.Rendering.Lights
         internal static Vector4 GetGpuPcssParameters(LightShadowMap shadowMap)
         {
             return shadowMap?.Filter is LightShadowMapFilterTypePcf pcf ? pcf.GetPcssParametersGpu() : Vector4.Zero;
+        }
+
+        /// <summary>
+        /// Packs PCSS parameters for the shadow shader (x: blocker search radius, y: min penumbra texels, z: max penumbra texels, w: scale).
+        /// </summary>
+        internal Vector4 GetPcssParameters2Gpu()
+        {
+            return new Vector4(PcssRadiusSpread, 0f, 0f, 0f);
+        }
+
+        /// <summary>
+        /// Resolves GPU PCSS parameters from a shadow map's filter, or zero when not a PCF filter.
+        /// </summary>
+        internal static Vector4 GetGpuPcssParameters2(LightShadowMap shadowMap)
+        {
+            return shadowMap?.Filter is LightShadowMapFilterTypePcf pcf ? pcf.GetPcssParameters2Gpu() : Vector4.Zero;
         }
 
         public bool RequiresCustomBuffer()
