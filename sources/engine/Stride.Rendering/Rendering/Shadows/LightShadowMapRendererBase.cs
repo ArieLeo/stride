@@ -69,11 +69,6 @@ namespace Stride.Rendering.Shadows
                         shadowType |= LightShadowType.PCF7x7;
                         break;
                 }
-
-                if (pcfFilter.UsePcss)
-                {
-                    shadowType |= LightShadowType.PCSS;
-                }
             }
 
             if (shadowMap.Debug)

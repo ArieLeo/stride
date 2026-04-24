@@ -38,17 +38,16 @@ namespace Stride.Rendering.Shadows
             ShadowShader.Mixins.Add(CreateShaderSource(lightCurrentCount));
 
             // Add filter for current shadow type
-            var usePcss = (ShadowType & LightShadowType.PCSS) != 0;
             switch (ShadowType & LightShadowType.FilterMask)
             {
                 case LightShadowType.PCF3x3:
-                    ShadowShader.Mixins.Add(new ShaderClassSource("ShadowMapFilterPcf", FilterMemberName, 3, usePcss));
+                    ShadowShader.Mixins.Add(new ShaderClassSource("ShadowMapFilterPcf", FilterMemberName, 3));
                     break;
                 case LightShadowType.PCF5x5:
-                    ShadowShader.Mixins.Add(new ShaderClassSource("ShadowMapFilterPcf", FilterMemberName, 5, usePcss));
+                    ShadowShader.Mixins.Add(new ShaderClassSource("ShadowMapFilterPcf", FilterMemberName, 5));
                     break;
                 case LightShadowType.PCF7x7:
-                    ShadowShader.Mixins.Add(new ShaderClassSource("ShadowMapFilterPcf", FilterMemberName, 7, usePcss));
+                    ShadowShader.Mixins.Add(new ShaderClassSource("ShadowMapFilterPcf", FilterMemberName, 7));
                     break;
                 default:
                     ShadowShader.Mixins.Add(new ShaderClassSource("ShadowMapFilterDefault", FilterMemberName));

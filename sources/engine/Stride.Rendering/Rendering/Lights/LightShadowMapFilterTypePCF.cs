@@ -2,8 +2,8 @@
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
 using System.ComponentModel;
+
 using Stride.Core;
-using Stride.Core.Mathematics;
 
 namespace Stride.Rendering.Lights
 {
@@ -17,7 +17,7 @@ namespace Stride.Rendering.Lights
     }
 
     /// <summary>
-    /// Percentage-closer filtering (PCF) for shadow maps, with optional PCSS penumbra.
+    /// No shadowmap filter.
     /// </summary>
     [DataContract("LightShadowMapFilterTypePcf")]
     [Display("PCF")]
@@ -26,11 +26,6 @@ namespace Stride.Rendering.Lights
         public LightShadowMapFilterTypePcf()
         {
             FilterSize = LightShadowMapFilterTypePcfSize.Filter3x3;
-            PcssBlockerSearchRadius = 16.0f;
-            PcssMinPenumbraTexels = 1.5f;
-            PcssMaxPenumbraTexels = 5.0f;
-            PcssPenumbraScale = 5.0f;
-            PcssRadiusSpread = 1.0f;
         }
 
         /// <summary>
@@ -41,80 +36,6 @@ namespace Stride.Rendering.Lights
         [DataMember(10)]
         [DefaultValue(LightShadowMapFilterTypePcfSize.Filter3x3)]
         public LightShadowMapFilterTypePcfSize FilterSize { get; set; }
-
-        /// <summary>
-        /// When enabled, uses percentage-closer soft shadows (PCSS) for variable penumbra; otherwise fixed-kernel PCF only.
-        /// </summary>
-        /// <userdoc>Use PCSS to widen the shadow filter based on estimated blocker distance (contact hard, distant soft).</userdoc>
-        [DataMember(20)]
-        [DefaultValue(false)]
-        public bool UsePcss { get; set; }
-
-        /// <summary>
-        /// Blocker search radius in shadow map texels (PCSS search phase).
-        /// </summary>
-        /// <userdoc>Larger values find occluders farther from the sample point but cost more.</userdoc>
-        [DataMember(30)]
-        [DefaultValue(16.0f)]
-        public float PcssBlockerSearchRadius { get; set; }
-
-        /// <summary>
-        /// Minimum penumbra radius in texels after PCSS estimation.
-        /// </summary>
-        [DataMember(40)]
-        [DefaultValue(1.5f)]
-        public float PcssMinPenumbraTexels { get; set; }
-
-        /// <summary>
-        /// Maximum penumbra radius in texels after PCSS estimation.
-        /// </summary>
-        [DataMember(50)]
-        [DefaultValue(5.0f)]
-        public float PcssMaxPenumbraTexels { get; set; }
-
-        /// <summary>
-        /// Scales penumbra width from the receiver/blocker depth ratio (artist tuning).
-        /// </summary>
-        /// <userdoc>Higher values produce wider, softer penumbra.</userdoc>
-        [DataMember(60)]
-        [DefaultValue(5.0f)]
-        public float PcssPenumbraScale { get; set; }
-
-        [DataMember(70)]
-        [DefaultValue(1.0f)]
-        public float PcssRadiusSpread { get; set; }
-
-        /// <summary>
-        /// Packs PCSS parameters for the shadow shader (x: blocker search radius, y: min penumbra texels, z: max penumbra texels, w: scale).
-        /// </summary>
-        internal Vector4 GetPcssParametersGpu()
-        {
-            return new Vector4(PcssBlockerSearchRadius, PcssMinPenumbraTexels, PcssMaxPenumbraTexels, PcssPenumbraScale);
-        }
-
-        /// <summary>
-        /// Resolves GPU PCSS parameters from a shadow map's filter, or zero when not a PCF filter.
-        /// </summary>
-        internal static Vector4 GetGpuPcssParameters(LightShadowMap shadowMap)
-        {
-            return shadowMap?.Filter is LightShadowMapFilterTypePcf pcf ? pcf.GetPcssParametersGpu() : Vector4.Zero;
-        }
-
-        /// <summary>
-        /// Packs PCSS parameters for the shadow shader (x: blocker search radius, y: min penumbra texels, z: max penumbra texels, w: scale).
-        /// </summary>
-        internal Vector4 GetPcssParameters2Gpu()
-        {
-            return new Vector4(PcssRadiusSpread, 0f, 0f, 0f);
-        }
-
-        /// <summary>
-        /// Resolves GPU PCSS parameters from a shadow map's filter, or zero when not a PCF filter.
-        /// </summary>
-        internal static Vector4 GetGpuPcssParameters2(LightShadowMap shadowMap)
-        {
-            return shadowMap?.Filter is LightShadowMapFilterTypePcf pcf ? pcf.GetPcssParameters2Gpu() : Vector4.Zero;
-        }
 
         public bool RequiresCustomBuffer()
         {

@@ -227,8 +227,6 @@ namespace Stride.Rendering.Shadows
             private Vector2[] faceSizes;
             private Vector2[] depthParameters;
             private float[] depthBiases;
-            private Vector4 pcssParameters;
-            private Vector4 pcssParameters2;
 
             private ValueParameterKey<float> depthBiasesKey;
             private ValueParameterKey<Matrix> viewKey;
@@ -240,11 +238,6 @@ namespace Stride.Rendering.Shadows
             private ObjectParameterKey<Texture> shadowMapTextureKey;
             private ValueParameterKey<Vector2> shadowMapTextureSizeKey;
             private ValueParameterKey<Vector2> shadowMapTextureTexelSizeKey;
-            private ValueParameterKey<Vector4> pcssParametersKey;
-            private ValueParameterKey<Vector4> pcssParametersKey2;
-            private int pcssFrameIndex;
-            private ValueParameterKey<float> pcssFrameIndexKey;
-
 
             public ShaderGroupData(LightShadowType shadowType) : base(shadowType)
             {
@@ -266,9 +259,6 @@ namespace Stride.Rendering.Shadows
                 depthParametersKey = ShadowMapReceiverPointParaboloidKeys.DepthParameters.ComposeWith(compositionName);
                 viewKey = ShadowMapReceiverPointParaboloidKeys.View.ComposeWith(compositionName);
                 depthBiasesKey = ShadowMapReceiverPointParaboloidKeys.DepthBiases.ComposeWith(compositionName);
-                pcssParametersKey = ShadowMapKeys.PcssParameters.ComposeWith(compositionName);
-                pcssParametersKey2= ShadowMapKeys.PcssParameters2.ComposeWith(compositionName);
-                pcssFrameIndexKey = ShadowMapKeys.PcssFrameIndex.ComposeWith(compositionName);
             }
 
             public override void UpdateLightCount(int lightLastCount, int lightCurrentCount)
@@ -302,8 +292,6 @@ namespace Stride.Rendering.Shadows
                         depthParameters[lightIndex] = shaderData.DepthParameters;
                         depthBiases[lightIndex] = shaderData.DepthBias;
                         viewMatrices[lightIndex] = shaderData.View;
-                        pcssParameters = LightShadowMapFilterTypePcf.GetGpuPcssParameters(lightEntry.ShadowMapTexture.Shadow);
-                        pcssParameters2 = LightShadowMapFilterTypePcf.GetGpuPcssParameters2(lightEntry.ShadowMapTexture.Shadow);
                         lightIndex++;
 
                         // TODO: should be setup just once at creation time
@@ -331,9 +319,6 @@ namespace Stride.Rendering.Shadows
                 parameters.Set(depthParametersKey, depthParameters);
 
                 parameters.Set(depthBiasesKey, depthBiases);
-                parameters.Set(pcssParametersKey, pcssParameters);
-                parameters.Set(pcssParametersKey2, pcssParameters2);
-                parameters.Set(pcssFrameIndexKey, (float)(pcssFrameIndex++ & 0xFFFF));
             }
         }
     }

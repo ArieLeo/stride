@@ -25,23 +25,5 @@ namespace Stride.Rendering.Shadows
         /// Final shadow map texture texel size.
         /// </summary>
         public static readonly ValueParameterKey<Vector2> TextureTexelSize = ParameterKeys.NewValue<Vector2>();
-
-        /// <summary>
-        /// PCSS parameters for the PCF filter: x = blocker search radius (texels), y = min penumbra (texels),
-        /// z = max penumbra (texels), w = penumbra scale. Only used when PCSS is enabled.
-        /// </summary>
-        public static readonly ValueParameterKey<Vector4> PcssParameters = ParameterKeys.NewValue<Vector4>();
-        /// <summary>
-        /// PCSS parameters for the PCF filter: x = radius spread, y = empty,
-        /// z = empty, w = empty. Only used when PCSS is enabled.
-        /// </summary>
-        public static readonly ValueParameterKey<Vector4> PcssParameters2 = ParameterKeys.NewValue<Vector4>();
-
-        /// <summary>
-        /// Monotonically increasing frame counter uploaded to the PCSS shader so the interleaved
-        /// gradient noise rotation is shifted by the golden ratio each frame, giving maximal temporal
-        /// spread for TAA accumulation.
-        /// </summary>
-        public static readonly ValueParameterKey<float> PcssFrameIndex = ParameterKeys.NewValue<float>();
     }
 }
