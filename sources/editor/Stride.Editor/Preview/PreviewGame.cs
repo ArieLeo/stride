@@ -71,7 +71,7 @@ namespace Stride.Editor.Preview
         protected override void Initialize()
         {
             base.Initialize();
-
+            TreatNotFocusedLikeMinimized = false;
             // Use a shared database for our shader system
             // TODO: Shaders compiled on main thread won't actually be visible to MicroThread build engine (contentIndexMap are separate).
             // It will still work and cache because EffectCompilerCache caches not only at the index map level, but also at the database level.
